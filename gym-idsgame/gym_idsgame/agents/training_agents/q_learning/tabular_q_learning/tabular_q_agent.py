@@ -179,18 +179,18 @@ class TabularQAgent(QAgent):
                 self.num_train_hacks = 0
 
             # Run evaluation every <self.config.eval_frequency> episodes
-            if episode % self.config.eval_frequency == 0:
-                self.eval(episode)
+            # if episode % self.config.eval_frequency == 0:
+            #     self.eval(episode)
 
             # Save Q table every <self.config.checkpoint_frequency> episodes
-            if episode % self.config.checkpoint_freq == 0:
-                self.save_q_table()
-                self.env.save_trajectories(checkpoint = True)
-                self.env.save_attack_data(checkpoint = True)
-                if self.config.save_dir is not None:
-                    time_str = str(time.time())
-                    self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
-                    self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            # if episode % self.config.checkpoint_freq == 0:
+            #     self.save_q_table()
+            #     self.env.save_trajectories(checkpoint = True)
+            #     self.env.save_attack_data(checkpoint = True)
+            #     if self.config.save_dir is not None:
+            #         time_str = str(time.time())
+            #         self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
+            #         self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
 
             # Reset environment for the next episode and update game stats
             done = False
@@ -215,9 +215,12 @@ class TabularQAgent(QAgent):
         self.env.save_trajectories(checkpoint = False)
         self.env.save_attack_data(checkpoint = False)
         if self.config.save_dir is not None:
-            time_str = str(time.time())
-            self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
-            self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            # time_str = str(time.time())
+            # self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
+            # self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            x = str(time.time())
+            self.train_result.to_csv(self.config.save_dir + "/q_table_train_results_" + x + ".csv")
+            self.eval_result.to_csv(self.config.save_dir + "/q_table_eval_results_" + x + ".csv")
 
         return self.train_result
 

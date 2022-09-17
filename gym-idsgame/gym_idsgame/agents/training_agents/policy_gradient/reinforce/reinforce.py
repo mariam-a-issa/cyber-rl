@@ -454,18 +454,18 @@ class ReinforceAgent(PolicyGradientAgent):
                 self.num_train_hacks = 0
 
             # Run evaluation every <self.config.eval_frequency> iterations
-            if iter % self.config.eval_frequency == 0:
-                self.eval(iter)
+            # if iter % self.config.eval_frequency == 0:
+            #     self.eval(iter)
 
             # Save models every <self.config.checkpoint_frequency> iterations
-            if iter % self.config.checkpoint_freq == 0:
-                self.save_model()
-                self.env.save_trajectories(checkpoint=True)
-                self.env.save_attack_data(checkpoint=True)
-                if self.config.save_dir is not None:
-                    time_str = str(time.time())
-                    self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
-                    self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            # if iter % self.config.checkpoint_freq == 0:
+            #     self.save_model()
+            #     self.env.save_trajectories(checkpoint=True)
+            #     self.env.save_attack_data(checkpoint=True)
+            #     if self.config.save_dir is not None:
+            #         time_str = str(time.time())
+            #         self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
+            #         self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
 
             self.outer_train.update(1)
 
@@ -484,10 +484,12 @@ class ReinforceAgent(PolicyGradientAgent):
         self.env.save_trajectories(checkpoint = False)
         self.env.save_attack_data(checkpoint=False)
         if self.config.save_dir is not None:
-            time_str = str(time.time())
-            self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
-            self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
-
+            # time_str = str(time.time())
+            # self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
+            # self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            x = str(time.time())
+            self.train_result.to_csv(self.config.save_dir + "/reinforce_train_results_" + x + ".csv")
+            self.eval_result.to_csv(self.config.save_dir + "/reinforce_eval_results_" + x + ".csv")
         return self.train_result
 
     def eval(self, train_episode, log=True) -> ExperimentResult:

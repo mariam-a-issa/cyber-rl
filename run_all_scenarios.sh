@@ -1,4 +1,4 @@
-for SCENARIO in  "random_defense" "maximal_attack" #"minimal_defense"
+for SCENARIO in "minimal_defense" "random_defense" "maximal_attack"
 do
     echo "Running $SCENARIO Scenario"
 #    echo "...for DQN"
@@ -10,10 +10,10 @@ do
 #    echo "...for PPO"
 #    python run_ppo.py $SCENARIO
 #
-#    echo "...for Tablular Q"
-#    python run_tabular_q.py $SCENARIO
+    echo "...for Tablular Q"
+    python run_tabular_q.py $SCENARIO
 
-    echo "...for QHD"
-    python run_qhd.py $SCENARIO
+#    echo "...for QHD"
+#    python run_qhd.py $SCENARIO
 done
 

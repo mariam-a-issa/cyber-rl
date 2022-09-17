@@ -702,26 +702,26 @@ class PPOAgent(PolicyGradientAgent):
                 self.num_train_hacks = 0
 
             # Run evaluation every <self.config.eval_frequency> episodes
-            if episode % self.config.eval_frequency == 0:
-                self.eval(episode)
-                if self.config.opponent_pool and self.config.opponent_pool_config is not None:
-                    self.log_action_dist(attacker_initial_state_action_dist, attacker=True)
-                    self.log_action_dist(defender_initial_state_action_dist, attacker=False)
+            # if episode % self.config.eval_frequency == 0:
+            #     self.eval(episode)
+            #     if self.config.opponent_pool and self.config.opponent_pool_config is not None:
+            #         self.log_action_dist(attacker_initial_state_action_dist, attacker=True)
+            #         self.log_action_dist(defender_initial_state_action_dist, attacker=False)
 
             # Save models and other state every <self.config.checkpoint_frequency> episodes
-            if episode % self.config.checkpoint_freq == 0:
-                self.save_model()
-                self.env.save_trajectories()
-                self.env.save_attack_data(checkpoint=True)
-                if self.config.save_dir is not None:
-                    time_str = str(time.time())
-                    self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
-                    self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
-                if self.config.opponent_pool and self.config.opponent_pool_config is not None:
-                    self.create_policy_plot(attacker_initial_state_action_dist.data.cpu().numpy(), episode,
-                                            attacker=True)
-                    self.create_policy_plot(defender_initial_state_action_dist.data.cpu().numpy(), episode,
-                                            attacker=False)
+            # if episode % self.config.checkpoint_freq == 0:
+            #     self.save_model()
+            #     self.env.save_trajectories()
+            #     self.env.save_attack_data(checkpoint=True)
+            #     if self.config.save_dir is not None:
+            #         time_str = str(time.time())
+            #         self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
+            #         self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            #     if self.config.opponent_pool and self.config.opponent_pool_config is not None:
+            #         self.create_policy_plot(attacker_initial_state_action_dist.data.cpu().numpy(), episode,
+            #                                 attacker=True)
+            #         self.create_policy_plot(defender_initial_state_action_dist.data.cpu().numpy(), episode,
+            #                                 attacker=False)
 
             # Reset environment for the next episode and update game stats
             done = False
@@ -788,9 +788,12 @@ class PPOAgent(PolicyGradientAgent):
         self.env.save_trajectories(checkpoint=False)
         self.env.save_attack_data(checkpoint=False)
         if self.config.save_dir is not None:
-            time_str = str(time.time())
-            self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
-            self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            # time_str = str(time.time())
+            # self.train_result.to_csv(self.config.save_dir + "/" + time_str + "_train_results_checkpoint.csv")
+            # self.eval_result.to_csv(self.config.save_dir + "/" + time_str + "_eval_results_checkpoint.csv")
+            x = str(time.time())
+            self.train_result.to_csv(self.config.save_dir + "/ppo_train_results_" + x + ".csv")
+            self.eval_result.to_csv(self.config.save_dir + "/ppo_eval_results_" + x + ".csv")
 
         return self.train_result
 

@@ -65,7 +65,7 @@ if __name__ == '__main__':
                                   video_dir=default_output_dir() + "/results/videos/",
                                   gifs=False,
                                   gif_dir=default_output_dir() + "/results/gifs/",
-                                  save_dir=default_output_dir() + "/results/data/minimal_defense/",
+                                  save_dir=default_output_dir() + "/results/data/" + scenario + '/',
                                   attacker=attacker,
                                   defender=not attacker,
                                   dqn_config=dqn_config,
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     agent = DQNAgent(env, q_agent_config, "")
     start = time.time()
     agent.train()
-    print("*********Time to train*********: ", time.time() - start)
+    print("\n*********Time to train*********: \n", time.time() - start)
 
     train_result = agent.train_result
     eval_result = agent.eval_result

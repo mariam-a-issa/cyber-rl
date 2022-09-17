@@ -540,8 +540,8 @@ class DQNAgent(QAgent):
                 x = str(self.config.alpha)
             else:
                 x = str(time.time())
-            self.train_result.to_csv(self.config.save_dir + "/dqn_train_results_" + self.hp_to_tune + x + ".csv")
-            self.eval_result.to_csv(self.config.save_dir + "/dqn_eval_results_" + self.hp_to_tune + x + ".csv")
+            self.train_result.to_csv(self.config.save_dir + "/dqn_train_results_" + x + ".csv")
+            self.eval_result.to_csv(self.config.save_dir + "/dqn_eval_results_" + x + ".csv")
 
         return self.train_result
 

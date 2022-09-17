@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
         # Set up environment
         env_name = "idsgame-" + scenario + "-v3"
-        env = gym.make(env_name, save_dir=default_output_dir() + "/results/data/" + scenario + "/qhd/")
+        env = gym.make(env_name, save_dir=default_output_dir() + "/results/data/" + scenario + "/")
 
         agent = QHDAgent(env, qhd_agent_config, "")
         start = time.time()
