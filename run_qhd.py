@@ -8,19 +8,19 @@ from gym_idsgame.agents.training_agents.q_learning.qhd.qhd import QHDAgent
 from gym_idsgame.agents.training_agents.q_learning.qhd.qhd_config import QHDConfig
 from experiments.util import util
 
-# def get_script_path():
-#     """
-#     :return: the script path
-#     """
-#     return os.path.dirname(os.path.realpath(sys.argv[0]))
+def get_script_path():
+    """
+    :return: the script path
+    """
+    return os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
-# def default_output_dir() -> str:
-#     """
-#     :return: the default output dir
-#     """
-#     script_dir = get_script_path()
-#     return script_dir
+def default_output_dir() -> str:
+    """
+    :return: the default output dir
+    """
+    script_dir = get_script_path()
+    return script_dir
 
 # Program entrypoint
 if __name__ == '__main__':
@@ -39,7 +39,7 @@ if __name__ == '__main__':
                                target_network_update_freq=1000,  # TODO: Hyperparameter for fine-tuning
                                gpu=False,
                                tensorboard=False,
-                               tensorboard_dir="./results/tensorboard/",
+                               tensorboard_dir=default_output_dir() + "/results/tensorboard/",
                                lr_exp_decay=False,
                                lr_decay_rate=0.9999)
 
@@ -59,10 +59,10 @@ if __name__ == '__main__':
                                       video=False,
                                       video_fps=5,
                                       video_frequency=101,
-                                      video_dir="./results/videos/",
+                                      video_dir=default_output_dir() + "/results/videos/",
                                       gifs=False,
-                                      gif_dir="./results/gifs/",
-                                      save_dir="./results/data/" + scenario + "/",
+                                      gif_dir=default_output_dir() + "/results/gifs/",
+                                      save_dir=default_output_dir() + "/results/data/" + scenario + "/",
                                       attacker=attacker,
                                       defender=not attacker,
                                       qhd_config=qhd_config,
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
         # Set up environment
         env_name = "idsgame-" + scenario + "-v3"
-        env = gym.make(env_name, save_dir="./results/data/" + scenario + "/qhd/")
+        env = gym.make(env_name, save_dir=default_output_dir() + "/results/data/" + scenario + "/qhd/")
 
         agent = QHDAgent(env, qhd_agent_config, "")
         start = time.time()

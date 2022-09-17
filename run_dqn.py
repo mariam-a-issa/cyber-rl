@@ -37,7 +37,7 @@ if __name__ == '__main__':
                            target_network_update_freq=1000,
                            gpu=False,
                            tensorboard=False,
-                           tensorboard_dir=default_output_dir() + "./results/tensorboard/",
+                           tensorboard_dir=default_output_dir() + "/results/tensorboard/",
                            lr_exp_decay=True,
                            lr_decay_rate=0.9999,
                            num_hidden_layers=1,
@@ -62,17 +62,17 @@ if __name__ == '__main__':
                                   video=False,
                                   video_fps=5,
                                   video_frequency=101,
-                                  video_dir=default_output_dir() + "./results/videos/",
+                                  video_dir=default_output_dir() + "/results/videos/",
                                   gifs=False,
-                                  gif_dir=default_output_dir() + "./results/gifs/",
-                                  save_dir="./results/data/minimal_defense/",
+                                  gif_dir=default_output_dir() + "/results/gifs/",
+                                  save_dir=default_output_dir() + "/results/data/minimal_defense/",
                                   attacker=attacker,
                                   defender=not attacker,
                                   dqn_config=dqn_config,
                                   checkpoint_freq=300000)
 
     env_name = "idsgame-" + scenario + "-v3"
-    env = gym.make(env_name, save_dir="./results/data/" + scenario + "/dqn/")
+    env = gym.make(env_name, save_dir=default_output_dir() + "/results/data/" + scenario + "/dqn/")
 
     agent = DQNAgent(env, q_agent_config, "")
     start = time.time()
