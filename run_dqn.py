@@ -23,8 +23,12 @@ def default_output_dir() -> str:
 
 # Program entrypoint
 if __name__ == '__main__':
+    scenario = str(sys.argv[1])
+    attacker = True if scenario == "minimal_defense" or scenario == "random_defense" else False
+
     random_seed = 0
     util.create_artefact_dirs(default_output_dir(), random_seed)
+
     dqn_config = DQNConfig(input_dim=88,
                            defender_output_dim=88,
                            attacker_output_dim=80,
@@ -34,7 +38,7 @@ if __name__ == '__main__':
                            gpu=False,
                            tensorboard=False,
                            tensorboard_dir=default_output_dir() + "./results/tensorboard/",
-                           lr_exp_decay=False,
+                           lr_exp_decay=True,
                            lr_decay_rate=0.9999,
                            num_hidden_layers=1,
                            hidden_dim=64,
@@ -43,11 +47,11 @@ if __name__ == '__main__':
                            optimizer="Adam",
                            )
     q_agent_config = QAgentConfig(gamma=0.999,
-                                  alpha=0.00001,  # Hyperparameter to finetune
+                                  alpha=0.00001,
                                   num_episodes=20001,
                                   epsilon=1,
                                   min_epsilon=0.01,
-                                  epsilon_decay=0.91,
+                                  epsilon_decay=0.9999,
                                   eval_sleep=0.9,
                                   eval_frequency=1000,
                                   eval_episodes=100,
@@ -61,16 +65,16 @@ if __name__ == '__main__':
                                   video_dir=default_output_dir() + "./results/videos/",
                                   gifs=False,
                                   gif_dir=default_output_dir() + "./results/gifs/",
-                                  save_dir="./results/data/random_defense/",
-                                  attacker=True,
-                                  defender=False,
+                                  save_dir="./results/data/minimal_defense/",
+                                  attacker=attacker,
+                                  defender=not attacker,
                                   dqn_config=dqn_config,
                                   checkpoint_freq=300000)
 
-    env_name = "idsgame-random_defense-v3"
-    env = gym.make(env_name, save_dir="./results/data/random_defense/")
+    env_name = "idsgame-" + scenario + "-v3"
+    env = gym.make(env_name, save_dir="./results/data/" + scenario + "/dqn/")
 
-    agent = DQNAgent(env, q_agent_config, "FINAL_")
+    agent = DQNAgent(env, q_agent_config, "")
     start = time.time()
     agent.train()
     print("*********Time to train*********: ", time.time() - start)

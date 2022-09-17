@@ -2,6 +2,7 @@ import os
 import gym
 import sys
 import time
+import sys
 from gym_idsgame.agents.training_agents.q_learning.abstract_qhd_agent_config import AbstractQHDAgentConfig
 from gym_idsgame.agents.training_agents.q_learning.qhd.qhd import QHDAgent
 from gym_idsgame.agents.training_agents.q_learning.qhd.qhd_config import QHDConfig
@@ -23,10 +24,13 @@ from experiments.util import util
 
 # Program entrypoint
 if __name__ == '__main__':
+    scenario = str(sys.argv[1])
+    attacker = True if scenario == "minimal_defense" or scenario == "random_defense" else False
+
     random_seed = 0
     util.create_artefact_dirs('./', random_seed)
 
-    for lr in [0.00001]: #, 0.0001, 0.001, 0.01]:
+    for lr in [0.00001]:
         qhd_config = QHDConfig(input_dim=88,
                                defender_output_dim=88,  # attacker would need 80: 10 attacks (+1 for defender), 8 nodes
                                attacker_output_dim=80,
@@ -40,7 +44,7 @@ if __name__ == '__main__':
                                lr_decay_rate=0.9999)
 
         qhd_agent_config = AbstractQHDAgentConfig(gamma=0.999,
-                                      lr=lr,  # TODO: Hyper-parameter for fine-tuning
+                                      lr=0.00001,  # TODO: Hyper-parameter for fine-tuning
                                       num_episodes=20001,
                                       epsilon=1,
                                       min_epsilon=0.01,
@@ -58,22 +62,20 @@ if __name__ == '__main__':
                                       video_dir="./results/videos/",
                                       gifs=False,
                                       gif_dir="./results/gifs/",
-                                      save_dir="./results/data/maximal_attack/",
-                                      attacker=False,
-                                      defender=True,
+                                      save_dir="./results/data/" + scenario + "/",
+                                      attacker=attacker,
+                                      defender=not attacker,
                                       qhd_config=qhd_config,
                                       checkpoint_freq=300000)
 
         # Set up environment
-        env_name = "idsgame-maximal_attack-v3" # "idsgame-maximal_defense-v3"
-        env = gym.make(env_name, save_dir="./results/data/maximal_attack/")
+        env_name = "idsgame-" + scenario + "-v3"
+        env = gym.make(env_name, save_dir="./results/data/" + scenario + "/qhd/")
 
-        # Set up agent
-        agent = QHDAgent(env, qhd_agent_config, "FINAL_")
+        agent = QHDAgent(env, qhd_agent_config, "")
         start = time.time()
         agent.train()
         print("*********Time to train*********: ", time.time() - start)
 
-        # TODO: I need to implement these functions
         train_result = agent.train_result
         eval_result = agent.eval_result
