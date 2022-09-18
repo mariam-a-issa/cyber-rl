@@ -782,7 +782,7 @@ class PPOAgent(PolicyGradientAgent):
         self.eval(self.config.num_episodes-1, log=False)
 
         # Save networks
-        self.save_model()
+        # self.save_model()
 
         # Save other game data
         self.env.save_trajectories(checkpoint=False)

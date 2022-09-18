@@ -498,10 +498,10 @@ class DQNAgent(QAgent):
             #     self.eval(episode)
 
             # Save models every <self.config.checkpoint_frequency> episodes
-            if episode % self.config.checkpoint_freq == 0:
-                self.save_model()
-                self.env.save_trajectories(checkpoint=True)
-                self.env.save_attack_data(checkpoint=True)
+            # if episode % self.config.checkpoint_freq == 0:
+            #     self.save_model()
+            #     self.env.save_trajectories(checkpoint=True)
+            #     self.env.save_attack_data(checkpoint=True)
                 # if self.config.save_dir is not None:
                 #     checkpoint_counter += 1
                 #     self.train_result.to_csv(self.config.save_dir + "/dqn_train_checkpoint_" + checkpoint_counter + ".csv")
@@ -526,7 +526,7 @@ class DQNAgent(QAgent):
         self.eval(self.config.num_episodes-1, log=False)
 
         # Save Q-networks
-        self.save_model()
+        # self.save_model()
 
         # Save other game data
         self.env.save_trajectories(checkpoint=False)

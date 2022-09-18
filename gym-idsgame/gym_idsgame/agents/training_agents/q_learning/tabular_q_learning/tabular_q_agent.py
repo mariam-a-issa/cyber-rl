@@ -209,7 +209,7 @@ class TabularQAgent(QAgent):
         self.log_state_values()
 
         # Save Q Table
-        self.save_q_table()
+        # self.save_q_table()
 
         # Save other game data
         self.env.save_trajectories(checkpoint = False)
@@ -437,24 +437,24 @@ class TabularQAgent(QAgent):
                 self.env.generate_gif(self.config.gif_dir + "/episode_" + str(train_episode) + "_"
                                       + time_str + ".gif", self.config.video_fps)
 
-            if len(attacker_frames) > 1:
-                # Save state values analysis for final state
-                base_path = self.config.save_dir + "/state_values/" + str(train_episode) + "/"
-                if not os.path.exists(base_path):
-                    os.makedirs(base_path)
-                np.save(base_path + "attacker_states.npy", attacker_states)
-                np.save(base_path + "attacker_state_values.npy", attacker_state_values)
-                np.save(base_path + "attacker_frames.npy", attacker_frames)
-
-
-            if len(defender_frames) > 1:
-                # Save state values analysis for final state
-                base_path = self.config.save_dir + "/state_values/" + str(train_episode) + "/"
-                if not os.path.exists(base_path):
-                    os.makedirs(base_path)
-                np.save(base_path + "defender_states.npy", np.array(defender_states))
-                np.save(base_path + "defender_state_values.npy", np.array(defender_state_values))
-                np.save(base_path + "defender_frames.npy", np.array(defender_frames))
+            # if len(attacker_frames) > 1:
+            #     # Save state values analysis for final state
+            #     base_path = self.config.save_dir + "/state_values/" + str(train_episode) + "/"
+            #     if not os.path.exists(base_path):
+            #         os.makedirs(base_path)
+            #     np.save(base_path + "attacker_states.npy", attacker_states)
+            #     np.save(base_path + "attacker_state_values.npy", attacker_state_values)
+            #     np.save(base_path + "attacker_frames.npy", attacker_frames)
+            #
+            #
+            # if len(defender_frames) > 1:
+            #     # Save state values analysis for final state
+            #     base_path = self.config.save_dir + "/state_values/" + str(train_episode) + "/"
+            #     if not os.path.exists(base_path):
+            #         os.makedirs(base_path)
+            #     np.save(base_path + "defender_states.npy", np.array(defender_states))
+            #     np.save(base_path + "defender_state_values.npy", np.array(defender_state_values))
+            #     np.save(base_path + "defender_frames.npy", np.array(defender_frames))
 
             # Reset for new eval episode
             done = False

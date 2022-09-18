@@ -54,7 +54,8 @@ if __name__ == '__main__':
                                                 input_dim_attacker=88, #44
                                                 output_dim_attacker=80, #40
                                                 hidden_dim=64,
-                                                num_hidden_layers=1, batch_size=32,
+                                                num_hidden_layers=1,
+                                                batch_size=32,
                                                 gpu=False,
                                                 tensorboard=False,
                                                 tensorboard_dir=default_output_dir() + "/results/tensorboard/",
