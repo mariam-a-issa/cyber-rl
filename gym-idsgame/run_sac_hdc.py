@@ -11,7 +11,7 @@ from gym_idsgame.agents.training_agents.soft_actor_critic.sac.sac_config import 
 from gym_idsgame.agents.training_agents.soft_actor_critic.abstract_sac_agent_config import AbstractSACAgentConfig
 from experiments.util import util
 
-NUM_REPEATS = 2
+NUM_REPEATS = 3
 
 def get_script_path():
     """
@@ -41,34 +41,34 @@ def main(hdc : bool):
 
     torch.set_default_device(_DEVICE)
     
-    scenario = "minimal_defense" #str(sys.argv[1])
-    #attacker = True if scenario == "minimal_defense" or scenario == "random_defense" else False
+    scenario = "maximal_attack" #str(sys.argv[1])
+    attacker = True if scenario == "minimal_defense" or scenario == "random_defense" else False
 
     random_seed = 0
     util.create_artefact_dirs('./', random_seed)
 
     hparam_dict = {
-        'alpha_scale' : [.5, .55, .6, .65, .7, .75, .8, .85, .9, .95, 1, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35],
+        'alpha_scale' : [.89],
     }
     
     if hdc:
         type_run = 'hdc'
         hparam = {
-        'alpha_lr' : 1e-5,
-        'alpha_scale' : .6,
-        'critic_lr' : .005,
-        'hypervec_dim' : 2048,
-        'policy_lr' : 1e-5,
-        'sample_size' : 512,
-        'tau' : .03
+            'alpha_lr' : 1e-5,
+            'alpha_scale' : .6,
+            'critic_lr' : .005,
+            'hypervec_dim' : 2048,
+            'policy_lr' : 1e-5,
+            'sample_size' : 512,
+            'tau' : .03
     }
     else:
         type_run = 'nn'
         hparam = {
-            'alpha_lr' : 1e-5,
-            'alpha_scale' : .7,
-            'critic_lr' : .01,
-            'policy_lr' : .01,
+            'alpha_lr' : .0003,
+            'alpha_scale' : .98,
+            'critic_lr' : .0003,
+            'policy_lr' : .0003,
             'sample_size' : 64,
             'tau' : .005
         }
@@ -88,7 +88,11 @@ def main(hdc : bool):
 								gpu=True,
                                 **hparam)
 
-                sac_config = AbstractSACAgentConfig(sac_config=hdc_sac_config, num_episodes=50000, train_log_frequency=1)
+                sac_config = AbstractSACAgentConfig(sac_config=hdc_sac_config,
+                                                    num_episodes=200, 
+                                                    train_log_frequency=1, 
+                                                    attacker=attacker, 
+                                                    defender=not attacker)
 
                 # Set up environment
                 #env_name = "idsgame-" + scenario + "-v3"
@@ -107,4 +111,3 @@ def main(hdc : bool):
                
 if __name__ == '__main__':
     main(False)
-    main(True)
