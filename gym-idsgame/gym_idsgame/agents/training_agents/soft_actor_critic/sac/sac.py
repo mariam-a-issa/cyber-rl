@@ -8,6 +8,7 @@ import time
 import tqdm
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from torch.distributions import Categorical
 from gym_idsgame.envs.rendering.video.idsgame_monitor import IdsGameMonitor
 from gym_idsgame.agents.training_agents.soft_actor_critic.abstract_sac_agent_config import AbstractSACAgentConfig
 from gym_idsgame.envs.idsgame_env import IdsGameEnv
@@ -179,17 +180,25 @@ class SACAgent(AbstractSACAgent):
         if attacker:
             actions = list(range(self.env.num_attack_actions))
             legal_actions = list(filter(lambda action: self.env.is_attack_legal(action), actions))
+            non_legal_actions = list(filter(lambda action: not self.env.is_attack_legal(action), actions))
         else:
             actions = list(range(self.env.num_defense_actions))
             legal_actions = list(filter(lambda action: self.env.is_defense_legal(action), actions))
+            non_legal_actions = list(filter(lambda action: not self.env.is_defense_legal(action), actions))
 
         with torch.no_grad():
             if attacker:
-                value = self.attacker(state)
+                action_probs = self.attacker.probs(state)
             else:
-                value = self.defender(state)
+                action_probs = self.defender.probs(state)
+            
+            if len(legal_actions) > 0:
+                action_probs[non_legal_actions] = 0
 
-        return value.item()
+            dist = Categorical(action_probs)
+            
+        
+        return dist.sample().item()
 
     def train(self) -> ExperimentResult:
         """

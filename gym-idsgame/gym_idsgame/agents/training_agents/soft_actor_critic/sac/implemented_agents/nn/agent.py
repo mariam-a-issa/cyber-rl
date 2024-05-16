@@ -60,6 +60,11 @@ class Agent:
             action, _, _ = self._actor(state)
             return action
 
+    def probs(self, state : Tensor) -> Tensor:
+        """Will return the action probabilites of the distribtuion"""
+        with torch.no_grad():
+            return self._actor.probs(state)
+    
     def update(self, batch : Transition) -> None:
         """Will update the networks according to the correct steps"""
         if self._steps % self._update_freq == 0:

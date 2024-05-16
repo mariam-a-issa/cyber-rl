@@ -85,9 +85,10 @@ def main(hdc : bool):
                                 tensorboard=True,
                                 tensorboard_dir=f'results/tensorboard/{type_run}/{key}/{value}/{i}',
                                 hdc_agent=hdc,
+								gpu=True,
                                 **hparam)
 
-                sac_config = AbstractSACAgentConfig(sac_config=hdc_sac_config, num_episodes=10, train_log_frequency=1)
+                sac_config = AbstractSACAgentConfig(sac_config=hdc_sac_config, num_episodes=50000, train_log_frequency=1)
 
                 # Set up environment
                 #env_name = "idsgame-" + scenario + "-v3"
@@ -105,5 +106,5 @@ def main(hdc : bool):
                
                
 if __name__ == '__main__':
-    main(True)
     main(False)
+    main(True)

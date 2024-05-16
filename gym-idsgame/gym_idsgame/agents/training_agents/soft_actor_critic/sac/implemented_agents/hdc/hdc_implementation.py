@@ -240,6 +240,11 @@ class Actor(nn.Module):
 
         return action, log_prob, action_probs
     
+    def probs(self, state : Tensor) -> Tensor:
+        """Will return the action probs of the distribution"""
+        logits = self._logits(state)
+        return F.softmax(logits)
+    
     def update(self, trans : Transition, steps : int, summary_writer : SummaryWriter, ce_state : Tensor):
         """Using according to equation 12 as well as gradient based """
         

@@ -66,6 +66,12 @@ class Agent:
             action, _, _ = self._actor(hvec_state)
             return action
 
+    def probs(self, state : Tensor) -> Tensor:
+        """Will return the action probabilites of the distribution"""
+        with torch.no_grad():
+            hvec_state = self._actor_encoder(state)
+            return self._actor.probs(hvec_state)
+    
     def update(self, batch : Transition) -> None:
         """Will update the networks according to the correct steps"""
         if self._steps % self._update_freq == 0:

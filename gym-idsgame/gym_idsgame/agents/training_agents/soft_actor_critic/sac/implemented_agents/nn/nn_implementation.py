@@ -200,6 +200,11 @@ class Actor(BaseNN):
 
         return action, log_prob, action_probs
     
+    def probs(self, x : Tensor) -> Tensor:
+        """Will return the action probs of the distribution"""
+        logits = super().forward(x)
+        return F.softmax(logits)
+    
     def update(self, trans : Transition, steps : int, summary_writer : SummaryWriter) -> None:
         """Will update according to equation 12"""
 
