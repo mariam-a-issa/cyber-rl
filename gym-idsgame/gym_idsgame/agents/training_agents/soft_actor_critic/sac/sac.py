@@ -177,28 +177,30 @@ class SACAgent(AbstractSACAgent):
             device = torch.device("cuda:0")
             state = state.to(device)
 
-        if attacker:
-            actions = list(range(self.env.num_attack_actions))
-            legal_actions = list(filter(lambda action: self.env.is_attack_legal(action), actions))
-            non_legal_actions = list(filter(lambda action: not self.env.is_attack_legal(action), actions))
-        else:
-            actions = list(range(self.env.num_defense_actions))
-            legal_actions = list(filter(lambda action: self.env.is_defense_legal(action), actions))
-            non_legal_actions = list(filter(lambda action: not self.env.is_defense_legal(action), actions))
+        mask = self.get_mask(attacker)
 
         with torch.no_grad():
             if attacker:
-                action_probs = self.attacker.probs(state)
+                value = self.attacker(state, mask)
             else:
-                action_probs = self.defender.probs(state)
-            
-            if len(legal_actions) > 0:
-                action_probs[non_legal_actions] = 0
-
-            dist = Categorical(action_probs)
-            
+                value = self.defender(state, mask)
         
-        return dist.sample().item()
+        return value
+    
+    def get_mask(self, attacker : bool) -> torch.Tensor:
+        if attacker:
+            actions = list(range(self.env.num_attack_actions))
+            non_legal_actions = list(filter(lambda action: not self.env.is_attack_legal(action), actions))
+            mask = torch.ones(self.config.sac_config.attacker_output_dim, device=torch.device('cuda:0'), dtype=torch.float32)   
+        else:
+            actions = list(range(self.env.num_defense_actions))
+            non_legal_actions = list(filter(lambda action: not self.env.is_defense_legal(action), actions))
+            mask = torch.ones(self.config.sac_config.defender_output_dim, device=torch.device('cuda:0'), dtype=torch.float32)   
+        
+        mask[non_legal_actions] = 0 
+        
+        return mask
+        
 
     def train(self) -> ExperimentResult:
         """
@@ -255,6 +257,7 @@ class SACAgent(AbstractSACAgent):
                     defender_action = self.get_action(defender_obs, attacker=False)
 
                 action = (attacker_action, defender_action)
+                mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
 
                 # Take a step in the environment
                 obs_prime, reward, done, _ = self.env.step(action)
@@ -262,9 +265,11 @@ class SACAgent(AbstractSACAgent):
                 obs_state_a_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=True, state=[])
                 obs_state_d_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=False, state=[])
                 obs_prime = (obs_state_a_prime, obs_state_d_prime)
+                
+                next_mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
 
                 # Add transition to replay memory
-                a_tran, d_tran = self._env_to_transition(obs, action, reward, done, obs_prime)
+                a_tran, d_tran = self._env_to_transition(obs, action, reward, done, obs_prime, mask, next_mask)
                 self.attacker_buffer.add_data(a_tran)
                 self.defender_buffer.add_data(d_tran)
 
@@ -812,7 +817,9 @@ class SACAgent(AbstractSACAgent):
                            actions : tuple[torch.Tensor, torch.Tensor], #They will be scalars so need to add dimension
                            reward : tuple[float, float],
                            done : bool,
-                           next_state : tuple[np.ndarray, np.ndarray]) -> tuple[Transition, Transition]:
+                           next_state : tuple[np.ndarray, np.ndarray],
+                           mask : tuple[torch.Tensor, torch.Tensor],
+                           next_mask : tuple[torch.Tensor, torch.Tensor]) -> tuple[Transition, Transition]:
         """
         Will take in inputs from the environment and create a transition for the
         attacker and the defender
@@ -822,13 +829,17 @@ class SACAgent(AbstractSACAgent):
         a_a, d_a = actions
         a_r, d_r = reward
         a_ns, d_ns = next_state
+        a_m, d_m = mask
+        a_nm, d_nm = next_mask
         
         attacker_transition = Transition(
             torch.tensor(a_s.flatten(), device=self.device, dtype=torch.float32),
             torch.tensor([a_a], device=self.device, dtype=torch.int64),
             torch.tensor(a_ns.flatten(), device=self.device, dtype=torch.float32),
             torch.tensor([a_r], device=self.device, dtype=torch.float32),
-            torch.tensor([done], device=self.device, dtype=torch.float32)
+            torch.tensor([done], device=self.device, dtype=torch.float32),
+            a_m,
+            a_nm
         )
         
         defender_transition = Transition(
@@ -836,7 +847,9 @@ class SACAgent(AbstractSACAgent):
             torch.tensor([d_a], device=self.device, dtype=torch.int64),
             torch.tensor(d_ns.flatten(), device=self.device, dtype=torch.float32),
             torch.tensor([d_r], device=self.device, dtype=torch.float32),
-            torch.tensor([done], device=self.device, dtype=torch.float32)
+            torch.tensor([done], device=self.device, dtype=torch.float32),
+            d_m,
+            d_nm
         )
         
         return attacker_transition, defender_transition

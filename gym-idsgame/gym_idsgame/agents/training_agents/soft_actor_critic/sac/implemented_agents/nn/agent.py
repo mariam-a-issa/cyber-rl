@@ -54,16 +54,12 @@ class Agent:
         
         self._steps = 1
 
-    def __call__(self, state : Tensor) -> Tensor:
+    def __call__(self, state : Tensor, mask : Tensor = None) -> Tensor:
         """Will return the action that should be executed at the given state"""
+        
         with torch.no_grad():
-            action, _, _ = self._actor(state)
+            action, _, _ = self._actor(state, mask)
             return action
-
-    def probs(self, state : Tensor) -> Tensor:
-        """Will return the action probabilites of the distribtuion"""
-        with torch.no_grad():
-            return self._actor.probs(state)
     
     def update(self, batch : Transition) -> None:
         """Will update the networks according to the correct steps"""

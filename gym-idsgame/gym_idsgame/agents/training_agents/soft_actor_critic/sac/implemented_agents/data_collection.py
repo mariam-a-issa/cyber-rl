@@ -9,7 +9,9 @@ Transition = namedtuple('Transition',
                          'action', 
                          'next_state',  
                          'reward', 
-                         'done'])
+                         'done',
+                         'mask',
+                         'next_mask'])
 
 
 class MemoryBuffer:
@@ -27,12 +29,14 @@ class MemoryBuffer:
         else:
             sample = random.sample(self._memory, self._sample_size)
 
-        state, action, next_state, reward, done = zip(*sample) #unpack list and create tuples of each data point in transition
+        state, action, next_state, reward, done, mask, next_mask = zip(*sample) #unpack list and create tuples of each data point in transition
         return Transition(state = torch.stack(state, dim = 0), #Each element of transition is the batch of values
                           action = torch.stack(action, dim = 0),
                           next_state = torch.stack(next_state, dim = 0),
                           reward = torch.stack(reward, dim = 0),
-                          done = torch.stack(done, dim = 0))
+                          done = torch.stack(done, dim = 0),
+                          mask = torch.stack(mask, dim=0),
+                          next_mask = torch.stack(next_mask, dim=0))
     
     def add_data(self, trans : Transition) -> None:
         """Will add the data from the single transition into the buffer
@@ -43,6 +47,8 @@ class MemoryBuffer:
         next_state: torch.Tensor vector of dim S
         reward: torch.Tensor vector of dim 1
         done: torch.Tensor vector of dim 1 (A value of 1 corresponds to True and 0 to false)
+        mask: torch.Tensor vector of dim A with 1s at legal actions and 0s and nonlegal actions
+        next_mask: torch.Tensor vector of dim A similar to mask but for possible actions in the next state
         
         Note: All these tensors should be float32 for best performance and should already be in the DEVICE
         

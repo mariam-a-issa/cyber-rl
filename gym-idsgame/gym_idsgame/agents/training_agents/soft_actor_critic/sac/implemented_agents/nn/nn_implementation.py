@@ -48,16 +48,23 @@ class QFunction:
     def set_target(self, target : 'QFunction') -> None:
         self._target = target
 
-    def __call__(self, state : Tensor) -> Tensor:
+    def __call__(self, state : Tensor, mask : Tensor = None) -> Tensor:
         """Will give a Tensor where each index represents the q value for the corresponding action"""
-        return torch.min(self._q1(state), self._q2(state))
+        q1 = self._q1(state)
+        q2 = self._q2(state)
+        
+        if mask is not None:
+            q1 *= mask
+            q2 *= mask
+            
+        return torch.min(q1, q2)
     
     def update(self, trans : Transition, steps : int, summary_writer : SummaryWriter) -> None:
         """Will update using equations 3, 4, and 12"""
         
         with torch.no_grad():
-            _, next_log_pi, next_action_probs = self._actor(trans.next_state)
-            q_log_dif : Tensor = self._target(trans.next_state) - self._alpha() * next_log_pi
+            _, next_log_pi, next_action_probs = self._actor(trans.next_state, trans.next_mask)
+            q_log_dif : Tensor = self._target(trans.next_state, trans.next_mask) - self._alpha() * next_log_pi
 
             #Unsqueeze in order to have b x 1 x a · b x a x 1
             #Which results in b x 1 x 1 to then be squeezed to b x 1 
@@ -68,6 +75,9 @@ class QFunction:
 
         q1 : Tensor = self._q1(trans.state)
         q2 : Tensor = self._q2(trans.state)
+        
+        q1 *= trans.mask
+        q2 *= trans.mask
 
         #The action will be b x 1 where each element corresponds to index of action
         #By doing gather, make q_a with shape b x 1 where the element is the q value for the performed action
@@ -124,9 +134,9 @@ class QFunctionTarget:
         self._actual.to(device)
         self._target.to(device)
 
-    def __call__(self, state : Tensor) -> Tensor:
+    def __call__(self, state : Tensor, mask : Tensor) -> Tensor:
         """Will return the q values from the target network"""
-        return self._target(state)
+        return self._target(state, mask)
     
     def update(self) -> None:
         """Will do polyak averaging to update the target"""
@@ -188,11 +198,15 @@ class Actor(BaseNN):
 
         self._extra_info = extra_info
         
-    def forward(self, x : Tensor) -> tuple[Tensor]:
+    def forward(self, x : Tensor, mask : Tensor = None) -> tuple[Tensor]:
         """Will give the action, log_prob, and action_probs of action"""
 
         #Implementation very similar to cleanrl
         logits = super().forward(x)
+        
+        if mask is not None:
+            logits = torch.where(mask.type(torch.BoolTensor).to(torch.device('cuda:0')), logits, torch.tensor(-1e+8))
+        
         dist = Categorical(logits=logits)
         action = dist.sample()
         action_probs = dist.probs
@@ -200,18 +214,13 @@ class Actor(BaseNN):
 
         return action, log_prob, action_probs
     
-    def probs(self, x : Tensor) -> Tensor:
-        """Will return the action probs of the distribution"""
-        logits = super().forward(x)
-        return F.softmax(logits)
-    
     def update(self, trans : Transition, steps : int, summary_writer : SummaryWriter) -> None:
         """Will update according to equation 12"""
 
-        _, log_probs, action_probs = self(trans.state)
+        _, log_probs, action_probs = self(trans.state, trans.mask)
 
         with torch.no_grad():
-            q_v = self._target(trans.state)
+            q_v = self._target(trans.state, trans.mask)
         
         difference = self._alpha() * log_probs - q_v
 
