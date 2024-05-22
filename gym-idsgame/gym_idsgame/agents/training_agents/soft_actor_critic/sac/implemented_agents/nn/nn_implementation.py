@@ -75,13 +75,10 @@ class QFunction:
 
         q1 : Tensor = self._q1(trans.state)
         q2 : Tensor = self._q2(trans.state)
-        
-        q1 *= trans.mask
-        q2 *= trans.mask
 
         #The action will be b x 1 where each element corresponds to index of action
         #By doing gather, make q_a with shape b x 1 where the element is the q value for the performed action
-        
+        #Since the actions in the replay buffer are legal, we do not need to worry about masking illegal actions
         q1_a = q1.gather(1, trans.action)
         q2_a = q2.gather(1, trans.action)
 

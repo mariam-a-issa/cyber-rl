@@ -109,9 +109,16 @@ class QFunction:
         
         self._extra_info = extra_info
 
-    def __call__(self, state) -> Tensor:
+    def __call__(self, state : Tensor, mask : Tensor = None) -> Tensor:
         """State should be an encoded h_vect"""
-        return torch.min(self._q1(state), self._q2(state))
+        q1 = self._q1(state)
+        q2 = self._q2(state)
+        
+        if mask is not None:
+            q1 *= mask
+            q2 *= mask
+            
+        return torch.min(q1, q2)
     
     def update(self, trans : Transition, steps : int, summary_writer : SummaryWriter) -> Tensor:
         """Use equation 10 to find loss and then bind loss
@@ -123,8 +130,8 @@ class QFunction:
             ce_next_state = self._c_encoder(trans.next_state)
             ce_state = self._c_encoder(trans.state)
         
-            _, next_log_pi, next_action_probs = self._actor(ae_next_state)
-            q_log_dif : Tensor = self._target(ce_next_state) - self._alpha() * next_log_pi
+            _, next_log_pi, next_action_probs = self._actor(ae_next_state, trans.next_mask)
+            q_log_dif : Tensor = self._target(ce_next_state, trans.next_mask) - self._alpha() * next_log_pi
 
             #Unsqueeze in order to have b x 1 x a · b x a x 1
             #Which results in b x 1 x 1 to then be squeezed to b x 1 
@@ -138,7 +145,7 @@ class QFunction:
 
             #The action will be b x 1 where each element corresponds to index of action
             #By doing gather, make q_a with shape b x 1 where the element is the q value for the performed action
-            
+            #Since the actions in the replay buffer are legal, we do not need to worry about masking illegal actions
             q1_a = q1.gather(1, trans.action)
             q2_a = q2.gather(1, trans.action)
             #Stop of copy
@@ -228,11 +235,15 @@ class Actor(nn.Module):
         
         self._extra_info = extra_info
 
-    def forward(self, state : Tensor) -> tuple[Tensor]:
+    def forward(self, state : Tensor, mask : Tensor = None) -> tuple[Tensor]:
         """Will give the action, log_prob, action_probs of action"""
 
         #Same as the nn_implementation
         logits = self._logits(state)
+        
+        if mask is not None:
+            logits = torch.where(mask.type(torch.BoolTensor).to(torch.device('cuda:0')), logits, torch.tensor(-1e+8))
+        
         dist = Categorical(logits=logits)
         action = dist.sample()
         action_probs = dist.probs
