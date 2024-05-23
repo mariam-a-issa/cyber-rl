@@ -3,6 +3,8 @@ An agent for the IDSGameEnv that implements the SAC algorithm.
 """
 from copy import deepcopy
 from typing import Union
+import csv
+import os
 import numpy as np
 import time
 import tqdm
@@ -80,19 +82,23 @@ class SACAgent(AbstractSACAgent):
             defender_actions = list(range(self.env.num_defense_actions))
             legal_attack_actions = list(filter(lambda action: self.env.is_attack_legal(action), attacker_actions))
             legal_defense_actions = list(filter(lambda action: self.env.is_defense_legal(action), defender_actions))
-            attacker_action = torch.tensor(np.random.choice(legal_attack_actions), device=self.device, dtype=torch.float32)
-            defender_action = torch.tensor(np.random.choice(legal_defense_actions), device=self.device, dtype=torch.float32)
-            action = (attacker_action, defender_action)
+            attacker_action : torch.Tensor = torch.tensor(np.random.choice(legal_attack_actions), device=self.device, dtype=torch.float32)
+            defender_action : torch.Tensor = torch.tensor(np.random.choice(legal_defense_actions), device=self.device, dtype=torch.float32)
+            action = (int(attacker_action.item()), int(defender_action.item()))
 
+            mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
+            
             # Take action in the environment
             obs_prime, reward, done, info = self.env.step(action)
             attacker_obs_prime, defender_obs_prime = obs_prime
             obs_state_a_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=True, state=[])
             obs_state_d_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=False, state=[])
             obs_prime = (obs_state_a_prime, obs_state_d_prime)
+            
+            next_mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
 
             # Add transition to replay memory
-            a_trans, d_trans = self._env_to_transition(obs, action, reward, done, obs_prime)
+            a_trans, d_trans = self._env_to_transition(obs, action, reward, done, obs_prime, mask, next_mask)
             self.attacker_buffer.add_data(a_trans)
             self.defender_buffer.add_data(d_trans)
 
@@ -162,7 +168,7 @@ class SACAgent(AbstractSACAgent):
         self.attacker.to(self.device)
         self.defender.to(self.device)
 
-    def get_action(self, state: np.ndarray, eval : bool = False, attacker : bool = True) -> int:
+    def get_action(self, state: np.ndarray, eval : bool = False, attacker : bool = True) -> tuple[int, torch.Tensor]:
         """
 
         :param state: the state to sample an action for
@@ -181,11 +187,11 @@ class SACAgent(AbstractSACAgent):
 
         with torch.no_grad():
             if attacker:
-                value = self.attacker(state, mask)
+                value, action_probs = self.attacker.with_probs(state, mask)
             else:
-                value = self.defender(state, mask)
-        
-        return value
+                value, action_probs = self.defender.with_probs(state, mask)
+
+        return value.item(), action_probs
     
     def get_mask(self, attacker : bool) -> torch.Tensor:
         if attacker:
@@ -239,60 +245,85 @@ class SACAgent(AbstractSACAgent):
             episode_attacker_reward = 0
             episode_defender_reward = 0
             episode_step = 0
-            while not done:
-                if self.config.render:
-                    self.env.render(mode="human")
+            file_name = f"episode{episode}_{'attacker' if self.attacker else 'defender'}.csv"
+            os.makedirs(self.config.save_dir, exist_ok=True)
+            with open(self.config.save_dir + file_name, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                while not done:
+                    if self.config.attacker:
+                        action_dim = self.config.sac_config.attacker_output_dim
+                    else:
+                        action_dim = self.config.sac_config.defender_output_dim
+                    
+                    headers = ['Timestep'] + [f'Prob_Action{i+1}' for i in range(action_dim)] + ['Action_Taken', 'Reward']
+                    writer.writerow(headers)
+                    
+                    if self.config.render:
+                        self.env.render(mode="human")
 
-                if not self.config.attacker and not self.config.defender:
-                    raise AssertionError("Must specify whether training an attacker agent or defender agent")
+                    if not self.config.attacker and not self.config.defender:
+                        raise AssertionError("Must specify whether training an attacker agent or defender agent")
 
-                # Default initialization
-                attacker_action = 0
-                defender_action = 0
+                    # Default initialization
+                    attacker_action = 0
+                    defender_action = 0
 
-                # Get attacker and defender actions
-                if self.config.attacker:
-                    attacker_action = self.get_action(attacker_obs, attacker=True)
-                if self.config.defender:
-                    defender_action = self.get_action(defender_obs, attacker=False)
+                    # Get attacker and defender actions
+                    if self.config.attacker:
+                        attacker_action, a_action_probs = self.get_action(attacker_obs, attacker=True)
+                    if self.config.defender:
+                        defender_action, d_action_probs = self.get_action(defender_obs, attacker=False)
 
-                action = (attacker_action, defender_action)
-                mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
+                    action = (attacker_action, defender_action)
+                    mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
 
-                # Take a step in the environment
-                obs_prime, reward, done, _ = self.env.step(action)
-                attacker_obs_prime, defender_obs_prime = obs_prime
-                obs_state_a_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=True, state=[])
-                obs_state_d_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=False, state=[])
-                obs_prime = (obs_state_a_prime, obs_state_d_prime)
-                
-                next_mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
+                    # Take a step in the environment
+                    obs_prime, reward, done, _ = self.env.step(action)
+                    attacker_obs_prime, defender_obs_prime = obs_prime
+                    obs_state_a_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=True, state=[])
+                    obs_state_d_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=False, state=[])
+                    obs_prime = (obs_state_a_prime, obs_state_d_prime)
+                    
+                    next_mask = (self.get_mask(attacker=True), self.get_mask(attacker=False))
 
-                # Add transition to replay memory
-                a_tran, d_tran = self._env_to_transition(obs, action, reward, done, obs_prime, mask, next_mask)
-                self.attacker_buffer.add_data(a_tran)
-                self.defender_buffer.add_data(d_tran)
-
-
-                # Perform a gradient descent step of the Q-network using targets produced by target network
-                if self.config.attacker:
-                    self.attacker.update(self.attacker_buffer.sample())
-
-                if self.config.defender:
-                    self.defender.update(self.defender_buffer.sample())
+                    # Add transition to replay memory
+                    a_tran, d_tran = self._env_to_transition(obs, action, reward, done, obs_prime, mask, next_mask)
+                    self.attacker_buffer.add_data(a_tran)
+                    self.defender_buffer.add_data(d_tran)
 
 
-                # Update metrics
-                attacker_reward, defender_reward = reward
-                obs_prime_attacker, obs_prime_defender = obs_prime
-                episode_attacker_reward += attacker_reward
-                episode_defender_reward += defender_reward
-                episode_step += 1
+                    # Perform a gradient descent step of the Q-network using targets produced by target network
+                    if self.config.attacker:
+                        self.attacker.update(self.attacker_buffer.sample())
 
-                # Move to the next state
-                obs = obs_prime
-                attacker_obs = obs_prime_attacker
-                defender_obs = obs_prime_defender
+                    if self.config.defender:
+                        self.defender.update(self.defender_buffer.sample())
+
+
+                    # Update metrics
+                    attacker_reward, defender_reward = reward
+                    obs_prime_attacker, obs_prime_defender = obs_prime
+                    episode_attacker_reward += attacker_reward
+                    episode_defender_reward += defender_reward
+                    episode_step += 1
+
+                    # Move to the next state
+                    obs = obs_prime
+                    attacker_obs = obs_prime_attacker
+                    defender_obs = obs_prime_defender
+                    
+                    if self.config.attacker:
+                        save_reward = attacker_reward
+                        probabilities = a_action_probs
+                        save_action = attacker_action 
+                    else:
+                        save_reward = defender_reward
+                        probabilities = d_action_probs
+                        save_action = defender_action
+                        
+                    row = [episode_step] + probabilities.tolist() + [save_action, save_reward]
+                    writer.writerow(row)
+                    
 
             # Render final frame
             if self.config.render:

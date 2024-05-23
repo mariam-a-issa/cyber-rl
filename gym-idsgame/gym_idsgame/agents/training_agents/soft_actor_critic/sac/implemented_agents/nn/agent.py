@@ -56,10 +56,14 @@ class Agent:
 
     def __call__(self, state : Tensor, mask : Tensor = None) -> Tensor:
         """Will return the action that should be executed at the given state"""
+        action, _ = self.with_probs(state, mask)
+        return action
         
+    def with_probs(self, state : Tensor, mask : Tensor = None) -> tuple[Tensor, Tensor]:
+        """Will return a tuple that contains the selected action and the action probs of that action"""
         with torch.no_grad():
-            action, _, _ = self._actor(state, mask)
-            return action
+            action, _, action_probs = self._actor(state, mask) 
+            return action, action_probs
     
     def update(self, batch : Transition) -> None:
         """Will update the networks according to the correct steps"""
